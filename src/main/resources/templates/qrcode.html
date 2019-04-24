@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<meta charset="UTF-8">
+<title>Title</title>
+<head>
+    <script th:src="@{/webjars/jquery/3.2.1/jquery.min.js}"></script>
+    <script th:src="@{/webjars/jquery.qrcode/0.12.0/dist/jquery.qrcode.min.js}"></script>
+   <!-- <script th:src="@{/webjars/bootstrap/3.3.5/js/bootstrap.min.js}"></script>
+    <link rel="stylesheet" th:src="@{webjars/bootstrap/3.3.5/css/bootstrap.min.css}"/>-->
+
+    <script src="http://cdn.static.runoob.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div style="width: 300px; height: 500px;margin: 0 auto;">
+    <div class="form-horizontal">
+        <button class="btn btn-primary" onclick="addButton()" id="addButton" >添加器材信息</button>
+        <br><br>
+        <div style="display: none" class="addContainer">
+            <form>
+                厂区：<input type="text" name="itemArea" class="itemArea"><br><br>
+                器材：<input type="text" name="itemName" class="itemName"><br><br>
+                <input type="button" value="添加" onclick="add()">
+            </form>
+        </div>
+        <br>
+        <br>
+    </div>
+</div>
+</body>
+
+<script>
+    function addButton() {
+        $(".addContainer").css("display", "block");
+        //$("#addButton").css("display", "none");
+    }
+
+    //新增厂区 和 健身器材
+    function add() {
+        var itemName = $(".itemName").val();
+        var itemArea = $(".itemArea").val();
+        if(itemName == "" || itemArea== ""){
+            alert("请勿输入空值");
+            return false;
+        }
+        $.ajax({
+            url: "/api/add",
+            data: {"itemArea": itemArea, "itemName": itemName},
+            type: "post",
+            success: function (data) {
+                var result = data.result;
+                if (result == "success") {
+                    alert("添加成功！");
+                    $(".addContainer").css("display", "none");
+                    $(".addButton").css("display", "block");
+                }
+            }
+        });
+    }
+</script>
+</html>

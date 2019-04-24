@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<meta charset="UTF-8">
+<title>Title</title>
+<head>
+    <script src="/webjars/jquery/3.2.1/jquery.min.js"></script>
+    <script src="/webjars/jquery.qrcode/0.12.0/dist/jquery.qrcode.min.js"></script>
+    <script src="/webjars/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="/webjars/bootstrap/3.3.5/css/bootstrap.min.css"/>
+</head>
+<body style="width: 100%;height: 100%;">
+<div style="width: 400px; height: 500px;margin: 150px auto;">
+    <div class="form-horizontal">
+        <div class="form-group">
+            <label for="area" class="col-sm-3 control-label">厂区选择：</label>
+            <div class="col-sm-8">
+                <select name="area" id="area" class="form-control" onChange="changeArea()">
+                    <option th:each=" l: ${list}">
+                        <div th:text="${l.itemArea}"></div>
+                    </option>
+                </select>
+            </div>
+        </div>
+        <br>
+        <div class="form-group">
+            <label for="item" class="col-sm-3 control-label">器材选择：</label>
+            <div class="col-sm-8">
+                <select name="item" id="item" class="form-control">
+                    <option th:each=" l: ${list1}">
+                        <div th:text="${l.itemName}"></div>
+                    </option>
+                </select>
+            </div>
+        </div>
+        <br>
+
+        <div class="form-group">
+            <label for="flushInterval" class="col-sm-3 control-label">刷新间隔：</label>
+            <div class="col-sm-8">
+                <select name="flushInterval" id="flushInterval" class="form-control">
+                    <option value="10">10分钟</option>
+                    <option value="30">30分钟</option>
+                    <option value="60">1小时</option>
+                    <option value="120">2小时</option>
+                </select>
+            </div>
+        </div>
+        <div style="position: relative;top:20px;left: 30%;" class="form-horizontal">
+
+            <button onclick="qr()" class="btn btn-primary">生成二维码</button>
+
+            <button onclick="holeScreen()" class="btn btn-primary" style="position: relative;left: 20px;">满屏显示</button>
+            <br>
+            <br>
+            <div id="code" style="position: relative;left: 0%;width:500px;height: 500px;"></div>
+        </div>
+    </div>
+</div>
+
+</form>
+</body>
+
+<script>
+    //默认10分钟刷新一次
+    var flushInterval = 10 * 100 * 60;
+
+    function autoFlush() {
+        setInterval(qr, flushInterval);
+    }
+
+    //根据用户选择的厂区  动态展示  对应的健身器材
+    function changeArea() {
+        var area = $("#area option:selected").val();
+        $.ajax({
+            url: "/api/changeArea",
+            data: {"area": area},
+            type: "post",
+            success: function (data) {
+                var items = data.items;
+                var obj = document.getElementById('item');
+                obj.options.length = 0;
+                for (var key in items) {
+                    obj.options.add(new Option(items[key], items[key]));
+                }
+            }
+        });
+    }
+
+    function addButton() {
+        $(".addContainer").css("display", "block");
+        $(".addButton").css("display", "none");
+    }
+
+    //生成二维码
+    function qr() {
+        var area = $("#area option:selected").val();
+        var item = $("#item option:selected").val();
+        //刷新间隔
+        var flush = $("#flushInterval option:selected").val();
+        var uuid = get_uuid();
+
+        //设置自动刷新间隔
+        flushInterval = flush * 1000 * 60;
+        $("#code").empty();
+        $("#code").qrcode({
+            render: "canvas",
+            width: 300, //宽度
+            height: 300, //高度
+            text: area + "," + item + "," + uuid + "," + flush //qrcode 内容
+        });
+        $.ajax({
+            url: "/api/update",
+            data: {"area": area, "item": item, "uuid": uuid, "flush": flush},
+            type: "post",
+            success: function (data) {
+                var result = data.result;
+                if (result == "success") {
+                }
+            }
+        });
+        //调用自动刷新
+        autoFlush();
+    }
+
+    function holeScreen() {
+        $("#code").css({"height": "100%", "width": "100%"});
+    }
+
+    function toUtf8(str) {
+        var out, i, len, c;
+        out = "";
+        len = str.length;
+        for (i = 0; i < len; i++) {
+            c = str.charCodeAt(i);
+            if ((c >= 0x0001) && (c <= 0x007F)) {
+                out += str.charAt(i);
+            } else if (c > 0x07FF) {
+                out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
+                out += String.fromCharCode(0x80 | ((c >> 6) & 0x3F));
+                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+            } else {
+                out += String.fromCharCode(0xC0 | ((c >> 6) & 0x1F));
+                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+            }
+        }
+        return out;
+    }
+
+    function get_uuid() {
+        var s = [];
+        var hexDigits = "0123456789abcdef";
+        for (var i = 0; i < 36; i++) {
+            s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+        }
+        s[14] = "4";
+        s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);
+        s[8] = s[13] = s[18] = s[23] = "-";
+
+        var uuid = s.join("");
+        return uuid;
+    }
+
+</script>
+</html>
